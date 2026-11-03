@@ -62,7 +62,7 @@ def pretokenization(task):
     return ct
 
 if __name__ == "__main__":
-    root = Path(r"D:\Projects\assignment1-basics\data\openwebtext_txt")
+    root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/openwebtext_txt")
 
     vocabulary = {
         i:bytes([i]) for i in range(256)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         path = root / file
         boundries = list()
         with open(path,"rb") as f:
-            boundries = find_chunk_boundaries(f,num_chunks,b"\r\n\r\n")
+            boundries = find_chunk_boundaries(f,num_chunks,b"<|endoftext|>")
         print("finding boundries successfully")
         tasks = [
             (chunk_id,path,start,end)
@@ -150,13 +150,16 @@ if __name__ == "__main__":
     pretoken_freq_list = list(ct.items())
 
     while len(vocabulary) < max_vocabsize:
+        t0 = time.perf_counter()
         chosen = max(pair_freq,key = lambda x:(pair_freq[x],x)) #shape like (b'a',b'b')
         vocabulary[len(vocabulary)] = chosen[0] + chosen[1]
         merges.append(chosen)
         #then update pair_freq
         
-        
         affected_ids = list(reversed_index[chosen])
+        t1 = time.perf_counter()
+
+        
         # process the pretokens that contain chosen pair
         
         # for pretoken_id in affected_ids:
@@ -224,9 +227,18 @@ if __name__ == "__main__":
 
             #save the updated pretoken
             pretoken_freq_list[pretoken] = (new_word, freq)
-
+        t2 = time.perf_counter()
+        if epoch % 100 == 0:
+            print(
+                f"epoch={epoch}, "
+                f"pairs={len(pair_freq)}, "
+                f"affected={len(affected_ids)}, "
+                f"max_time={t1-t0:.4f}s, "
+                f"update_time={t2-t1:.4f}s"
+            )
         print(f"epoch: {epoch} finished")
         epoch +=1
+        
 
     print(vocabulary[max(vocabulary,key = lambda x:len(vocabulary[x]))])
     # print(vocabulary)
@@ -234,11 +246,11 @@ if __name__ == "__main__":
     print(f"time consumed by merge is {end - start}")
 
 
-    # Path("Output").mkdir(exist_ok = True)
-    # with open("Output/vocab.pkl","wb") as f:
-    #     pickle.dump(vocabulary,f)
-    # with open("Output/merges.pkl","wb") as f:
-    #     pickle.dump(merges,f)
+    Path("Output/openwebtext").mkdir(exist_ok = True,parents=True)
+    with open("Output/openwebtext/vocab.pkl","wb") as f:
+        pickle.dump(vocabulary,f)
+    with open("Output/openwebtext/merges.pkl","wb") as f:
+        pickle.dump(merges,f)
 
 # from collections import Counter   
 # ct1 = Counter([("a","b"),("a","c")])
