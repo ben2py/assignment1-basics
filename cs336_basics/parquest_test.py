@@ -1,23 +1,28 @@
 import pyarrow.parquet as pq 
 from pathlib import Path
 
-root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/openwebtext_text")
-file_name = "train-00000-of-00080.parquet"
+# root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/openwebtext")
+root = Path(r"D:\Projects\assignment1-basics\data\openwebtext")
 
 
-pf = pq.ParquetFile(root / file_name)
-# batch = next(pf.iter_batches(batch_size = 1000)) # a raw group
+for file in root.glob("*.parquet"):
 
-# texts = batch.column("text").to_pylist()
+    print(file)
+    
+    pf = pq.ParquetFile(root / file)
+    # batch = next(pf.iter_batches(batch_size = 1000)) # a raw group
 
-# print(texts[0])
+    # texts = batch.column("text").to_pylist()
 
-src = file_name
-dst = (root/file_name).with_suffix(".txt")
+    # print(texts[0])
 
-with open(dst,"w",encoding="utf-8") as f:
-    for batch in pf.iter_batches(batch_size = 1024,columns=["text"]):
-        texts = batch.column("text").to_pylist()
-        for text in texts:
-            f.write(text)
-            f.write("<|endoftext|>")
+    src = root /file
+    dst_dir = Path(r"D:\Projects\assignment1-basics\data\openwebtext_txt")
+    dst = dst_dir /( file.stem+".txt")
+
+    with open(dst,"w",encoding="utf-8") as f:
+        for batch in pf.iter_batches(batch_size = 1024,columns=["text"]):
+            texts = batch.column("text").to_pylist()
+            for text in texts:
+                f.write(text)
+                f.write("<|endoftext|>")

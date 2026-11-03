@@ -10,6 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 import os
 import heapq
 from dataclasses import dataclass
+from tqdm import tqdm
 
 @dataclass(frozen = True)
 class HeapEntry:
@@ -97,8 +98,9 @@ def pretokenization(task):
     return ct
 
 if __name__ == "__main__":
-    root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/openwebtext_txt")
-
+    # root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/openwebtext_txt")
+    root = Path(r"D:\Projects\assignment1-basics\data\openwebtext_txt")
+    
     vocabulary = {
         i:bytes([i]) for i in range(256)
     }
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     max_vocabsize = 32000
     num_chunks = 128
     max_worker = 12
-    # vocabulary[len(vocabulary)] = b"<|endoftext|>"
+    vocabulary[len(vocabulary)] = b"<|endoftext|>"
     ct = Counter()
     begin= time.perf_counter()
     for file in root.glob("*.txt"):
@@ -190,109 +192,119 @@ if __name__ == "__main__":
 
     pretoken_freq_list = list(ct.items())
 
-    while len(vocabulary) < max_vocabsize and pair_freq:
-        t0 = time.perf_counter()
-        chosen = get_best_pair(heap,pair_freq,versions) #shape like (b'a',b'b')
-        vocabulary[len(vocabulary)] = chosen[0] + chosen[1]
-        merges.append(chosen)
-        #then update pair_freq
-        t1 = time.perf_counter()
-        affected_ids = list(reversed_index[chosen])
-        
-        
-        
-        # process the pretokens that contain chosen pair
-        
-        # for pretoken_id in affected_ids:
-        #     pretoken_freq_tuple = pretoken_freq_list[pretoken_id] #((b'a',b'c'),10)
-        #     pretoken = pretoken_freq_tuple[0]         
+    total_merges = max_vocabsize - len(vocabulary)
+
+    with tqdm(
+        total=total_merges,
+        desc="BPE Training",
+        unit="merge",
+        dynamic_ncols=True,
+        mininterval=0.5
+    ) as pbar:
+
+        while len(vocabulary) < max_vocabsize and pair_freq:
+            t0 = time.perf_counter()
+            chosen = get_best_pair(heap,pair_freq,versions) #shape like (b'a',b'b')
+            vocabulary[len(vocabulary)] = chosen[0] + chosen[1]
+            merges.append(chosen)
+            #then update pair_freq
+            t1 = time.perf_counter()
+            affected_ids = list(reversed_index[chosen])
             
-        #     cnt = 0
-        #     new_key = []
-        #     while cnt  < len(pretoken):
-        #         if cnt+1 < len(pretoken) and (pretoken[cnt],pretoken[cnt+1]) == chosen:
-        #             new_key.append(pretoken[cnt] + pretoken[cnt+1])
-        #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
-        #             #pair freq 前面已经删掉了
-        #             cnt +=2
-        #         elif cnt +2 < len(pretoken) and (pretoken[cnt+1],pretoken[cnt+2]) == chosen:
-        #             new_key.append(pretoken[cnt])
-        #             pair_freq[(pretoken[cnt],pretoken[cnt+1])] -= pretoken_freq_tuple[1]
-        #             pair_freq[(pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2])] += pretoken_freq_tuple[1]
-        #             reversed_index[pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2]].add(pretoken_id)
-        #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
-        #             cnt+=1
-                    
-        #         elif cnt>1 and (pretoken[cnt-2],pretoken[cnt-1]) == chosen:
-        #             new_key.append(pretoken[cnt])
-        #             pair_freq[(pretoken[cnt-1],pretoken[cnt])] -= pretoken_freq_tuple[1]
-        #             pair_freq[(pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt])] += pretoken_freq_tuple[1]
-        #             reversed_index[pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt]].add(pretoken_id)
-        #             reversed_index[pretoken[cnt-1],pretoken[cnt]].discard(pretoken_id)
-        #             cnt+=1
-                    
-        #         else:
-        #             new_key.append(pretoken[cnt])
-        #             cnt+=1
-        #     pretoken_freq_list[pretoken_id] = (tuple(new_key),pretoken_freq_tuple[1])
-
-        #fix bug: b'a',b'b',b'a',b'b' will not count b'ab' b'ab'
-        pair_delta = Counter()
-        
-        for pretoken in affected_ids:
-            word,freq = pretoken_freq_list[pretoken]
-            old_pairs = Counter(zip(word[:-1],word[1:]))
-
-            #get new word to prepare for the pre-token freq
-            new_word = list()
-            i = 0
-            while i<len(word):
-                if i+1 <=len(word)-1 and (word[i],word[i+1]) == chosen:
-                    new_word.append(word[i]+word[i+1])
-                    i+=2
-                else:
-                    new_word.append(word[i])
-                    i+=1
-            new_word = tuple(new_word)
-            #compute the new pairs
-            new_pairs = Counter(zip(new_word[:-1],new_word[1:]))
-            #update pair_freq
-            for pair in old_pairs.keys() |new_pairs.keys():
-                delta = (new_pairs[pair] - old_pairs[pair])*freq
+            
+            
+            # process the pretokens that contain chosen pair
+            
+            # for pretoken_id in affected_ids:
+            #     pretoken_freq_tuple = pretoken_freq_list[pretoken_id] #((b'a',b'c'),10)
+            #     pretoken = pretoken_freq_tuple[0]         
                 
-                # if delta == 0:continue
-                # pair_freq[pair] += delta
-                # if pair_freq[pair] < 0:raise RuntimeError(f"Negative Pair Frequncy: {pair}")
-                # if pair_freq[pair] == 0: pair_freq.pop(pair)
-                if delta:
-                    pair_delta[pair] += delta
-                #     update_pair_freq(pair,delta)
-            # update the reversed index
-            for pair in old_pairs.keys() - new_pairs.keys():
-                reversed_index[pair].discard(pretoken)
+            #     cnt = 0
+            #     new_key = []
+            #     while cnt  < len(pretoken):
+            #         if cnt+1 < len(pretoken) and (pretoken[cnt],pretoken[cnt+1]) == chosen:
+            #             new_key.append(pretoken[cnt] + pretoken[cnt+1])
+            #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
+            #             #pair freq 前面已经删掉了
+            #             cnt +=2
+            #         elif cnt +2 < len(pretoken) and (pretoken[cnt+1],pretoken[cnt+2]) == chosen:
+            #             new_key.append(pretoken[cnt])
+            #             pair_freq[(pretoken[cnt],pretoken[cnt+1])] -= pretoken_freq_tuple[1]
+            #             pair_freq[(pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2])] += pretoken_freq_tuple[1]
+            #             reversed_index[pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2]].add(pretoken_id)
+            #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
+            #             cnt+=1
+                        
+            #         elif cnt>1 and (pretoken[cnt-2],pretoken[cnt-1]) == chosen:
+            #             new_key.append(pretoken[cnt])
+            #             pair_freq[(pretoken[cnt-1],pretoken[cnt])] -= pretoken_freq_tuple[1]
+            #             pair_freq[(pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt])] += pretoken_freq_tuple[1]
+            #             reversed_index[pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt]].add(pretoken_id)
+            #             reversed_index[pretoken[cnt-1],pretoken[cnt]].discard(pretoken_id)
+            #             cnt+=1
+                        
+            #         else:
+            #             new_key.append(pretoken[cnt])
+            #             cnt+=1
+            #     pretoken_freq_list[pretoken_id] = (tuple(new_key),pretoken_freq_tuple[1])
+
+            #fix bug: b'a',b'b',b'a',b'b' will not count b'ab' b'ab'
+            pair_delta = Counter()
             
-            for pair in new_pairs.keys() - old_pairs.keys():
-                reversed_index[pair].add(pretoken)
-        
-            #save the updated pretoken
-            pretoken_freq_list[pretoken] = (new_word, freq)
+            for pretoken in affected_ids:
+                word,freq = pretoken_freq_list[pretoken]
+                old_pairs = Counter(zip(word[:-1],word[1:]))
 
-        for pair,delta in pair_delta.items():
-            if delta:
-                update_pair_freq(pair_freq,pair,delta)
+                #get new word to prepare for the pre-token freq
+                new_word = list()
+                i = 0
+                while i<len(word):
+                    if i+1 <=len(word)-1 and (word[i],word[i+1]) == chosen:
+                        new_word.append(word[i]+word[i+1])
+                        i+=2
+                    else:
+                        new_word.append(word[i])
+                        i+=1
+                new_word = tuple(new_word)
+                #compute the new pairs
+                new_pairs = Counter(zip(new_word[:-1],new_word[1:]))
+                #update pair_freq
+                for pair in old_pairs.keys() |new_pairs.keys():
+                    delta = (new_pairs[pair] - old_pairs[pair])*freq
+                    
+                    # if delta == 0:continue
+                    # pair_freq[pair] += delta
+                    # if pair_freq[pair] < 0:raise RuntimeError(f"Negative Pair Frequncy: {pair}")
+                    # if pair_freq[pair] == 0: pair_freq.pop(pair)
+                    if delta:
+                        pair_delta[pair] += delta
+                    #     update_pair_freq(pair,delta)
+                # update the reversed index
+                for pair in old_pairs.keys() - new_pairs.keys():
+                    reversed_index[pair].discard(pretoken)
+                
+                for pair in new_pairs.keys() - old_pairs.keys():
+                    reversed_index[pair].add(pretoken)
+            
+                #save the updated pretoken
+                pretoken_freq_list[pretoken] = (new_word, freq)
 
-        print(f"epoch: {epoch} finished")
-        epoch +=1
+            for pair,delta in pair_delta.items():
+                if delta:
+                    update_pair_freq(pair_freq,pair,delta)
 
-        t2 = time.perf_counter()
-        if epoch % 100 == 0:
-            print(
-                f"epoch={epoch}, "
-                f"pairs={len(pair_freq)}, "
-                f"affected={len(affected_ids)}, "
-                f"max_time={t1-t0:.4f}s, "
-                f"update_time={t2-t1:.4f}s"
-            )
+            print(f"epoch: {epoch} finished")
+            epoch +=1
+
+            t2 = time.perf_counter()
+            if epoch % 100 == 0:
+                print(
+                    f"epoch={epoch}, "
+                    f"pairs={len(pair_freq)}, "
+                    f"affected={len(affected_ids)}, "
+                    f"max_time={t1-t0:.4f}s, "
+                    f"update_time={t2-t1:.4f}s"
+                )
 
     print(vocabulary[max(vocabulary,key = lambda x:len(vocabulary[x]))])
     # print(vocabulary)
