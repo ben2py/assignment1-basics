@@ -73,7 +73,7 @@ if __name__ == "__main__":
     max_worker = 8
     vocabulary[len(vocabulary)] = b"<|endoftext|>"
 
-    path = "data/data/TinyStoriesV2-GPT4-train.txt"
+    path = "data/data/TinyStoriesV2-GPT4-valid.txt"
     boundries = list()
     with open(path,"rb") as f:
         boundries = find_chunk_boundaries(f,num_chunks,special_tokens[0])
@@ -150,43 +150,77 @@ if __name__ == "__main__":
         vocabulary[len(vocabulary)] = chosen[0] + chosen[1]
         merges.append(chosen)
         #then update pair_freq
-        pair_freq.pop(chosen) 
         
-        word_with_tar = reversed_index[chosen]
+        
+        affected_ids = list(reversed_index[chosen])
         # process the pretokens that contain chosen pair
         
-        for pretoken_id in word_with_tar.copy():
-            pretoken_freq_tuple = pretoken_freq_list[pretoken_id] #((b'a',b'c'),10)
-            pretoken = pretoken_freq_tuple[0]         
+        # for pretoken_id in affected_ids:
+        #     pretoken_freq_tuple = pretoken_freq_list[pretoken_id] #((b'a',b'c'),10)
+        #     pretoken = pretoken_freq_tuple[0]         
             
-            cnt = 0
-            new_key = []
-            while cnt  < len(pretoken):
-                if cnt+1 < len(pretoken) and (pretoken[cnt],pretoken[cnt+1]) == chosen:
-                    new_key.append(pretoken[cnt] + pretoken[cnt+1])
-                    reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
-                    cnt +=2
-                elif cnt +2 < len(pretoken) and (pretoken[cnt+1],pretoken[cnt+2]) == chosen:
-                    new_key.append(pretoken[cnt])
-                    pair_freq[(pretoken[cnt],pretoken[cnt+1])] -= pretoken_freq_tuple[1]
-                    pair_freq[(pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2])] += pretoken_freq_tuple[1]
-                    reversed_index[pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2]].add(pretoken_id)
-                    reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
-                    cnt+=1
+        #     cnt = 0
+        #     new_key = []
+        #     while cnt  < len(pretoken):
+        #         if cnt+1 < len(pretoken) and (pretoken[cnt],pretoken[cnt+1]) == chosen:
+        #             new_key.append(pretoken[cnt] + pretoken[cnt+1])
+        #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
+        #             #pair freq 前面已经删掉了
+        #             cnt +=2
+        #         elif cnt +2 < len(pretoken) and (pretoken[cnt+1],pretoken[cnt+2]) == chosen:
+        #             new_key.append(pretoken[cnt])
+        #             pair_freq[(pretoken[cnt],pretoken[cnt+1])] -= pretoken_freq_tuple[1]
+        #             pair_freq[(pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2])] += pretoken_freq_tuple[1]
+        #             reversed_index[pretoken[cnt],pretoken[cnt+1]+pretoken[cnt+2]].add(pretoken_id)
+        #             reversed_index[pretoken[cnt],pretoken[cnt+1]].discard(pretoken_id)
+        #             cnt+=1
                     
-                elif cnt>1 and (pretoken[cnt-2],pretoken[cnt-1]) == chosen:
-                    new_key.append(pretoken[cnt])
-                    pair_freq[(pretoken[cnt-1],pretoken[cnt])] -= pretoken_freq_tuple[1]
-                    pair_freq[(pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt])] += pretoken_freq_tuple[1]
-                    reversed_index[pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt]].add(pretoken_id)
-                    reversed_index[pretoken[cnt-1],pretoken[cnt]].discard(pretoken_id)
-                    cnt+=1
+        #         elif cnt>1 and (pretoken[cnt-2],pretoken[cnt-1]) == chosen:
+        #             new_key.append(pretoken[cnt])
+        #             pair_freq[(pretoken[cnt-1],pretoken[cnt])] -= pretoken_freq_tuple[1]
+        #             pair_freq[(pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt])] += pretoken_freq_tuple[1]
+        #             reversed_index[pretoken[cnt-2]+pretoken[cnt-1],pretoken[cnt]].add(pretoken_id)
+        #             reversed_index[pretoken[cnt-1],pretoken[cnt]].discard(pretoken_id)
+        #             cnt+=1
                     
+        #         else:
+        #             new_key.append(pretoken[cnt])
+        #             cnt+=1
+        #     pretoken_freq_list[pretoken_id] = (tuple(new_key),pretoken_freq_tuple[1])
+
+        #fix bug: b'a',b'b',b'a',b'b' will not count b'ab' b'ab'
+        for pretoken in affected_ids:
+            word,freq = pretoken_freq_list[pretoken]
+            old_pairs = Counter(zip(word[:-1],word[1:]))
+            new_word = list()
+            i = 0
+            while i<len(word):
+                if i+1 <=len(word)-1 and (word[i],word[i+1]) == chosen:
+                    new_word.append(word[i]+word[i+1])
+                    i+=2
                 else:
-                    new_key.append(pretoken[cnt])
-                    cnt+=1
-            pretoken_freq_list[pretoken_id] = (tuple(new_key),pretoken_freq_tuple[1])
-                   
+                    new_word.append(word[i])
+                    i+=1
+            new_word = tuple(new_word)
+            #compute the new pairs
+            new_pairs = Counter(zip(new_word[:-1],new_word[1:]))
+            #
+            for pair in old_pairs.keys() |new_pairs.keys():
+                delta = (new_pairs[key] - old_pairs[key])*freq
+                if delta == 0:continue
+                pair_freq[pair] += delta
+                if pair_freq[pair] < 0:raise RuntimeError(f"Negative Pair Frequncy: {pair}")
+                if pair_freq[pair] == 0: pair_freq.pop(pair)
+            # update the reversed index
+            for pair in old_pairs.keys() - new_pairs.keys():
+                reversed_index[pair].discard(pretoken)
+            
+            for pair in new_pairs.keys() - old_pairs.keys():
+                reversed_index[pair].add(pretoken)
+
+            #save the updated pretoken
+            pretoken_freq_list[pretoken] = (new_word, freq)
+
         print(f"epoch: {epoch} finished")
         epoch +=1
 
