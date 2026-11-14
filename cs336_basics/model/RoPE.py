@@ -184,7 +184,7 @@ class Multihead_Self_Attention(nn.Module):
 # print(res[0][0])
 
 
-x = torch.randn(2,20,768)# shape b l d
-MHA = Multihead_Self_Attention(768,12)
+# x = torch.randn(2,20,768)# shape b l d
+# MHA = Multihead_Self_Attention(768,12)
 
-print(MHA(x).shape)
+# print(MHA(x).shape)

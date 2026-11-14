@@ -24,6 +24,6 @@ class Embedding(nn.Module):
 
 
 
-embedding = Embedding(32000,768)
-print(embedding(10).shape)
+# embedding = Embedding(32000,768)
+# print(embedding(10).shape)
 
