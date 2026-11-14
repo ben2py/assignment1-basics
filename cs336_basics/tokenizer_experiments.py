@@ -109,8 +109,8 @@ def encode_afile(task):
     id,file = task
     pid = os.getpid()
     print(f"pid {pid}, task: {id}, processing file {file}")
-    t = _tokenizer
-    with open(file,"r",encoding="utf-8") as f:
+    t = Tokenizer.from_files("Output/openwebtext/vocab.pkl","Output/openwebtext/merges.pkl",special_tokens=["<|endoftext|>"])
+    with open(file,"r") as f:
         docs = read_document(f)
         tokens = t.encode_iterable(docs)
         Path("Output/openwebtext").mkdir(exist_ok=True,parents=True)
