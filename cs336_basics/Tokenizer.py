@@ -61,9 +61,9 @@ class Tokenizer:
 
             for i in range(len(elements)-1):
                 pair = (elements[i],elements[i+1])
-                
-                if self.merge_rank.get(pair,float("inf")) < best_rank:
-                    best_rank = best_rank
+                rank = self.merge_rank.get(pair,float("inf"))
+                if rank < best_rank:
+                    best_rank = rank
                     best_idx = i
             # for i in range(len(elements)):
             #     if i == idx:new_word.append(elements[i]+elements[i+1])

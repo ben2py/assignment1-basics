@@ -109,13 +109,18 @@ def encode_afile(task):
     id,file = task
     pid = os.getpid()
     print(f"pid {pid}, task: {id}, processing file {file}")
-    t = Tokenizer.from_files("Output/vocab.pkl","Output/merges.pkl",special_tokens=["<|endoftext|>"])
-    with open(file,"r") as f:
+    t = _tokenizer
+    with open(file,"r",encoding="utf-8") as f:
         docs = read_document(f)
         tokens = t.encode_iterable(docs)
         Path("Output/openwebtext").mkdir(exist_ok=True,parents=True)
         start = time.perf_counter()
-        with open("Output/openwebtext/train.bin","wb") as out:
+
+        output_dir = Path("Output/openwebtext/tokenized")
+        output_dir.mkdir(exist_ok=True, parents=True)
+        output_file = output_dir / f"{file.stem}.bin"
+
+        with open(output_file,"wb") as out:
             while True:
                 batch = list(islice(tokens,100000))
                 if not batch: break
@@ -124,14 +129,19 @@ def encode_afile(task):
                 arr.tofile(out)
         elapsed = time.perf_counter() - start
         print(f"pid {pid},task: {id} ,complete file {file},takes {elapsed/60:.4f}min")
+
+_tokenizer = None
+def init_worker():
+    global _tokenizer
+    _tokenizer = Tokenizer.from_files("Output/openwebtext/vocab.pkl","Output/openwebtext/merges.pkl",special_tokens=["<|endoftext|>"])
 if __name__ in "__main__":
     data_root = Path("data/openwebtext_txt")
-    max_worker = 10
-    task = {
+    max_worker = 14
+    task = [
         (id,file_name)
-        for id,file_name in enumerate(list(data_root.glob("*.txt")))
-    } 
-    print(task)
-    with ProcessPoolExecutor(max_workers = max_worker) as executor:
+        for id,file_name in enumerate(sorted(data_root.glob("*.txt")))
+    ] 
+    
+    with ProcessPoolExecutor(max_workers = max_worker,initializer=init_worker) as executor:
         for res in executor.map(encode_afile,task):
             pass

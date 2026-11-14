@@ -7,9 +7,15 @@ if __name__ == "__main__":
 
     # print(merges)
 
-    with open("Output/vocab.pkl","rb") as f:
+    with open("Output/openwebtext/vocab.pkl","rb") as f:
         vocabulary = pickle.load(f)
 
     token_id = max(vocabulary,key = lambda x:len(vocabulary[x]))
+    print(token_id)
     print(vocabulary[token_id])
+
+    print(f"vocab length: {len(vocabulary)}")
+    for i in range(20):
+
+        print(vocabulary[i+256])
     
