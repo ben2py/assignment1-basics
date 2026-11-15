@@ -22,6 +22,4 @@ class Linear(nn.Module):
     def forward(self,x:torch.Tensor) -> torch.Tensor:
         return self.W@x
 
-l1 = Linear(10,20)
-input = torch.empty(20,10)
-print(l1(input).shape)
+

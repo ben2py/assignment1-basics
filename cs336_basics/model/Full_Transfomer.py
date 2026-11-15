@@ -12,11 +12,12 @@ class Transformer_Block(nn.Module):
         self.d_ff = d_ff
         self.MHA = Multihead_Self_Attention(d_model,num_heads)
         self.swiglu = SwiGLU(d_model)
-        self.rmsnorm = RMSNorm(d_model,1e-5)
+        self.rmsnorm1 = RMSNorm(d_model,1e-5)
+        self.rmsnorm2 = RMSNorm(d_model,1e-5)
     def forward(self,x:torch.Tensor):
-        x = x + self.MHA(self.rmsnorm(x))
+        x = x + self.MHA(self.rmsnorm1(x))
 
-        y = x + self.swiglu(x)
+        y = x + self.swiglu(self.rmsnorm2(x))
         return y
 
 class Transformer_LM(nn.Module):
@@ -39,7 +40,9 @@ class Transformer_LM(nn.Module):
         embedding = self.embedding(x) #shape b l d
         
         x = self.layers(embedding)
-        
+
+        logits = self.final_norm(x)
+        y = self.lm_head(logits)
 
         return y
 
@@ -52,7 +55,7 @@ def cross_entropy(logits,targets):
     # print(logits[targets].shape)
     # print(targets.shape)
     # torch.Tensor 的高级缩影，可以在维度上用一个tensor数组去索引
-    return torch.mean(-logits[torch.arange(b),targets].unsqueeze(-1) + torch.log(m) +torch.log(torch.sum(torch.exp(logits - m),dim=-1)))
+    return torch.mean(-logits[torch.arange(b),targets].unsqueeze(-1) + m +torch.log(torch.sum(torch.exp(logits - m),dim=-1,keepdim=True)))
 
 
 # transformer_blk = Transformer_Block(768,12,2048)
@@ -65,7 +68,7 @@ def cross_entropy(logits,targets):
 # lm = Transformer_LM(32000,256,4,768,12,2048)
 # res = lm(x)
 # print(res.shape)
-logits = torch.randn(10,32000)
-targets = torch.arange(10)
+# logits = torch.randn(10,32000)
+# targets = torch.arange(10)
 
-print(cross_entropy(logits,targets))
+# print(cross_entropy(logits,targets))
