@@ -140,7 +140,7 @@ class Multihead_Self_Attention(nn.Module):
             "b l (d h) -> b h l d",
             h = self.num_heads
         )
-        mask = torch.triu(torch.ones(l,l),diagonal=1).bool()
+        mask = torch.triu(torch.ones(l,l),diagonal=1).bool().to(queries.device)
         values_updated = scaled_dot_product_attention(queries,keys,values,mask) #shape b h l d_v
         
         updated = rearrange(

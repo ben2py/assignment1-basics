@@ -8,6 +8,13 @@ import numpy as np
 from pathlib import Path
 from einops import rearrange
 import torch
+import time
+
+
+def get_available_device():
+    if torch.cuda.is_available():
+        return "cuda:0"
+    else: return "cpu"
 
 @dataclass
 class ModelConfig:
@@ -27,10 +34,10 @@ class OptimizerConfig:
 
 @dataclass
 class TrainConfig:
-    batch_size:int =16
+    batch_size:int =  8
     max_step:int = 10000
     max_grad_norm:int = 1
-    device:str = "cpu"
+    device:str = get_available_device()
     out:Path = Path("Output/checkpoints")
 
 def inspect_hook(module, inputs, output):
@@ -71,6 +78,7 @@ if __name__ == "__main__":
     max_grad_norm = train_config.max_grad_norm
     device = train_config.device
     out = train_config.out
+    out.mkdir(exist_ok=True)
 
     root = Path("Output/Tokenized")
     root.mkdir(exist_ok=True)
@@ -78,18 +86,17 @@ if __name__ == "__main__":
         root/"train-00000-of-00080.bin",dtype=np.uint16,mode="r"
     )
     net = Transformer_LM(vocab_size,context_length,num_layers,d_model,num_heads,d_model*8/3)
-    # handle = net.register_forward_hook(inspect_hook)
+    net.to(device)
+    print(f"running on {device}")
+
     AdamW = AdamW(net.parameters(),lr,(beta1,beta2),eps,weight_decay)
-    # for name, p in net.named_parameters():
-    #         if not torch.isfinite(p).all():
-    #             print("Invalid parameter:", name)
+    
     for i in range(train_config.max_step):
+        start = time.perf_counter()
         x,targets = data_load(arr,batch_size,context_length,device)
         logits = net(x) # shape b l d
         
-        
-
-
+    
         logits = rearrange(
             logits,"b l d -> (b l) d"
         )
@@ -98,16 +105,15 @@ if __name__ == "__main__":
         )
 
         loss = cross_entropy(logits,targets)
-        print(f"step {i}, loss {loss}")
+        print(f"step {i}, loss {loss};time consumed is {time.perf_counter() - start}")
         loss.backward()
         gradient_clipping(net.parameters(),max_grad_norm,eps)
         AdamW.step()
         AdamW.zero_grad()
 
-        if i%5 == 0:
+        if i%25 == 0 and i!=0:
             dst = out / f"{i}"
-            print(f"step {i}: save checkpoint to {dst}")
-            print(f"step {i}: loss: {loss}")
+            print(f"step {i}: save checkpoint to {dst} loss: {loss}")
             save_checkpoint(net,AdamW,i,dst)
             
 

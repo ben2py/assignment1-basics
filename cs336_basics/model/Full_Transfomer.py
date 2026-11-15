@@ -35,6 +35,7 @@ class Transformer_LM(nn.Module):
         self.embedding = Embedding(vocab_size,d_model)
         self.final_norm = RMSNorm(d_model,1e-5)
         self.lm_head = nn.Linear(d_model,vocab_size)
+        
     def forward(self,x:torch.Tensor): #shape b l
         
         embedding = self.embedding(x) #shape b l d

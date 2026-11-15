@@ -5,8 +5,8 @@ from pathlib import Path
 import random
 def data_load(x:np.ndarray,batch_size,context_length,device):
     # print(f"size of dataset is {x.size}")
-    # start = random.randint(0,x.size - context_length)
-    start = 0
+    start = random.randint(0,x.size - context_length)
+    # start = 0
     
     left = x[start:start + batch_size*context_length]
     right = x[start+1:start+batch_size*context_length+1]
