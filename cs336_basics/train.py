@@ -9,6 +9,7 @@ from pathlib import Path
 from einops import rearrange
 import torch
 import time
+import random
 
 
 def get_available_device():
@@ -40,10 +41,6 @@ class TrainConfig:
     device:str = get_available_device()
     out:Path = Path("Output/checkpoints")
 
-def inspect_hook(module, inputs, output):
-    print("Module type:", type(module).__name__)
-    print("Input shape:", inputs[0].shape)
-    print("Output shape:", output.shape)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -82,9 +79,8 @@ if __name__ == "__main__":
 
     root = Path("Output/Tokenized")
     root.mkdir(exist_ok=True)
-    arr = np.memmap(
-        root/"train-00000-of-00080.bin",dtype=np.uint16,mode="r"
-    )
+
+    
     net = Transformer_LM(vocab_size,context_length,num_layers,d_model,num_heads,d_model*8/3)
     net.to(device)
     print(f"running on {device}")
@@ -93,6 +89,11 @@ if __name__ == "__main__":
     
     for i in range(train_config.max_step):
         start = time.perf_counter()
+        file = random.choice(list(root.glob("*.bin")))
+        arr = np.memmap(
+                file,dtype=np.uint16,mode="r"
+            )
+        
         x,targets = data_load(arr,batch_size,context_length,device)
         logits = net(x) # shape b l d
         
@@ -105,12 +106,12 @@ if __name__ == "__main__":
         )
 
         loss = cross_entropy(logits,targets)
-        print(f"step {i}, loss {loss};time consumed is {time.perf_counter() - start}")
+        
         loss.backward()
         gradient_clipping(net.parameters(),max_grad_norm,eps)
         AdamW.step()
         AdamW.zero_grad()
-
+        print(f"step {i}, loss {loss};time consumed is {time.perf_counter() - start}")
         if i%25 == 0 and i!=0:
             dst = out / f"{i}"
             print(f"step {i}: save checkpoint to {dst} loss: {loss}")
