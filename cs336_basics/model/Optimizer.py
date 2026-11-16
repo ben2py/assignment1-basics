@@ -32,15 +32,19 @@ class AdamW(torch.optim.Optimizer):
                 exp_avg_sq.mul(beta2).addcmul_(
                     grad,grad,value = 1-beta2
                 )
+
+                state["exp_avg"] = exp_avg
+                state["exp_avg_sq"] = exp_avg_sq
+
                 #update the parameters
                 data = p.data
                 data = data - lr*weight_decay*data
                 #bias correction
-                alpha = lr*math.sqrt(1-beta1**t)/(1-beta2**t) 
+                alpha = lr*math.sqrt(1-beta2**t)/(1-beta1**t) 
                 #decoupled weight decay
                 p.data = data - alpha*exp_avg/torch.sqrt(exp_avg_sq+eps)
 
-                state[t] = t+1
+                state["t"] = t+1
                 
 def learning_rate_schedule(t,lr_max,lr_min,t_w,t_c):
     if t < t_w:return lr_max/t_w*t

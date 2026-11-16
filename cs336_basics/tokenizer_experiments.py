@@ -109,10 +109,10 @@ def encode_afile(task):
     id,file = task
     pid = os.getpid()
     print(f"pid {pid}, task: {id}, processing file {file}")
-    t = Tokenizer.from_files("Output/openwebtext/vocab.pkl","Output/openwebtext/merges.pkl",special_tokens=["<|endoftext|>"])
+    # t = Tokenizer.from_files("Output/openwebtext/vocab.pkl","Output/openwebtext/merges.pkl",special_tokens=["<|endoftext|>"])
     with open(file,"r") as f:
         docs = read_document(f)
-        tokens = t.encode_iterable(docs)
+        tokens = _tokenizer.encode_iterable(docs)
         Path("Output/openwebtext").mkdir(exist_ok=True,parents=True)
         start = time.perf_counter()
 
@@ -123,9 +123,10 @@ def encode_afile(task):
         with open(output_file,"wb") as out:
             while True:
                 batch = list(islice(tokens,100000))
+                print(any([i == 256 for i in batch]))
                 if not batch: break
-                
                 arr = np.asarray(batch,dtype=np.uint16)
+                
                 arr.tofile(out)
         elapsed = time.perf_counter() - start
         print(f"pid {pid},task: {id} ,complete file {file},takes {elapsed/60:.4f}min")

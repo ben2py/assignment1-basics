@@ -70,7 +70,7 @@ def softmax(x:torch.Tensor,i:int):
     )
     return exp_x/denominator
 
-def scaled_dot_product_attention(keys:torch.Tensor,queries:torch.Tensor,values,mask):
+def scaled_dot_product_attention(queries:torch.Tensor,keys:torch.Tensor,values,mask):
     
     d_k = keys.shape[-1]
 
@@ -85,7 +85,7 @@ def scaled_dot_product_attention(keys:torch.Tensor,queries:torch.Tensor,values,m
     
     attention = einsum(
         scores_softmax,values,
-        "b ... l l,b ... l d -> b ... l d"
+        "b ... s l ,b ... l d -> b ... s d"
     )
     return attention
 
@@ -103,37 +103,67 @@ class Multihead_Self_Attention(nn.Module):
         self.W_k = nn.Parameter(torch.empty(d_models,d_models))
         self.W_v = nn.Parameter(torch.empty(d_models,d_models))
         self.W_o = nn.Parameter(torch.empty(d_models,d_models))
-
+        std = math.sqrt(1/d_models)
+        nn.init.trunc_normal_(
+            self.W_q,
+            mean = 0,
+            std = std,
+            a = -3*std,
+            b = 3*std
+        )
+        nn.init.trunc_normal_(
+            self.W_k,
+            mean = 0,
+            std = std,
+            a = -3*std,
+            b = 3*std
+        )
+        nn.init.trunc_normal_(
+            self.W_v,
+            mean = 0,
+            std = std,
+            a = -3*std,
+            b = 3*std
+        )
+        nn.init.trunc_normal_(
+            self.W_o,
+            mean = 0,
+            std = std,
+            a = -3*std,
+            b = 3*std
+        )
         
 
-        self.rope = RotaryPositionEmbedding(10000,d_models,max_seq_len=10000)
+        self.rope = RotaryPositionEmbedding(10000,d_models/num_heads,max_seq_len=10000)
 
     def forward(self,x:torch.Tensor):
         #x.shape b l d
         b,l,d = x.shape
         token_positions = torch.arange(l)
-        self.rope(x,token_positions)
+        
         queries = einsum(
             x,self.W_q,
-            "b l d,d d -> b l d"
+            "b l d,d d1 -> b l d1"
         )
         queries = rearrange(
             queries,
             "b l (d h) -> b h l d",
             h = self.num_heads
         )
+        queries = self.rope(queries,token_positions)
         keys = einsum(
             x,self.W_k,
-            "b l d,d d -> b l d"
+            "b l d,d d1 -> b l d1"
         )
         keys = rearrange(
             keys,
             "b l (d h) -> b h l d",
             h = self.num_heads
         )
+        keys = self.rope(keys,token_positions)
         values = einsum(
             x,self.W_v,
-            "b l d,d d -> b l d"
+            "b l d,d d1 -> b l d1"
         )
         values = rearrange(
             values,
@@ -149,7 +179,7 @@ class Multihead_Self_Attention(nn.Module):
         )
         return einsum(
             updated,self.W_o,
-            "b l d,d d -> b l d"
+            "b l d,d d1 -> b l d1"
         )
 
 

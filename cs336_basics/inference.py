@@ -40,12 +40,12 @@ if __name__ == "__main__":
     src = inference_config.src
 
     net = Transformer_LM(vocab_size,context_length,num_layers,d_model,num_heads,d_model*8/3)
-    state_dict = torch.load(src/"random_whole_OWT/9975")
+    state_dict = torch.load(src/"random_whole_OWT/9975",map_location = torch.device("cpu"))
     net.load_state_dict(state_dict["model"])
     input_text = "When I moved into my first apartment, I had no idea how much money I would spend on"
 
     root = Path("Output/openwebtext")
-    t = Tokenizer.from_files(root/"vocab.pkl",root/"merges.pkl",special_tokens=["<|endoftext|>"])
+    t = Tokenizer.from_files(root/"vocab.pkl",root/"merges.pkl",special_tokens=["<|eos|>"])
 
     encoded = t.encode(input_text)
     last_token = torch.tensor([[encoded[-1]]])

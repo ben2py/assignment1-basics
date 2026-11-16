@@ -5,7 +5,8 @@ from pathlib import Path
 import random
 def data_load(x:np.ndarray,batch_size,context_length,device):
     # print(f"size of dataset is {x.size}")
-    start = random.randint(0,x.size - context_length)
+    # assert x.size > context_length*batch_size
+    start = random.randint(0,x.size - context_length*batch_size-1)
     # start = 0
     
     left = x[start:start + batch_size*context_length]
@@ -21,10 +22,11 @@ def data_load(x:np.ndarray,batch_size,context_length,device):
     )
     
     return (left_tensor,right_tensor)
-# root = Path("Output/Tokenized")
-# arr = np.memmap(
-#     root / "train-00000-of-00080.bin",
-#     dtype = np.uint16,
-#     mode = "r",
-# )
-# print(data_load(arr,10,1000,"mps"))
+root = Path("Output/Tokenized")
+arr = np.memmap(
+    root / "train-00000-of-00080.bin",
+    dtype = np.uint16,
+    mode = "r",
+    
+)
+print(any([i== 256 for i in data_load(arr,1,1000000,"mps")[0][0].tolist()]))

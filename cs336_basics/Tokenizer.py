@@ -11,7 +11,8 @@ class Tokenizer:
         self.special_tokens = special_tokens or []
         if special_tokens:
             for special_token in self.special_tokens:
-                self.vocab[len(self.vocab)] = special_token.encode("utf-8")
+                if special_token != "<|endoftext|>":
+                    self.vocab[len(self.vocab)] = special_token.encode("utf-8")
         self.merges =merges
         self.reversed_dict = {value:key for key,value in self.vocab.items()}
         self.merge_rank = {
@@ -83,11 +84,14 @@ class Tokenizer:
         # for special_token in self.special_tokens:
         
         if self.special_pattern:
-
-            parts = re.split(f"({self.special_pattern})",text)
+            
+            parts = re.split(f"{self.special_pattern}",text)
+            parts.append("<|endoftext|>")
             # re.split(special_pattern),会去除掉 special_pattern
             # re.split(f"({special_pattern})") 会保留 special_pattern
-
+            # print(len(parts))
+            # print(parts[-1])
+# 
         else:
             parts = [text]
         
@@ -95,6 +99,7 @@ class Tokenizer:
         for part in parts:
             
             if part in self.special_tokens:
+                
                 encoded.append(self.reversed_dict[part.encode("utf-8")])
             else:
                 for word in self.PAT.findall(part):
