@@ -120,9 +120,9 @@ def encode_afile(task):
         output_dir.mkdir(exist_ok=True, parents=True)
         output_file = output_dir / f"{file.stem}.bin"
 
-        with open(output_file,"wb") as out:
+        with open(output_file,"wb",encoding ="utf-8") as out:
             while True:
-                batch = list(islice(tokens,100000))
+                # batch = list(islice(tokens,100000))
                 print(any([i == 256 for i in batch]))
                 if not batch: break
                 arr = np.asarray(batch,dtype=np.uint16)

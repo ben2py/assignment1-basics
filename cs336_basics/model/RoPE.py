@@ -180,7 +180,7 @@ class Multihead_Self_Attention(nn.Module):
         return einsum(
             updated,self.W_o,
             "b l d,d d1 -> b l d1"
-        )
+        )# b l d,d d 会只使用self.W_o的对角线，这是极其严重的错误
 
 
 # rope = RotaryPositionEmbedding(10000,768,10)
