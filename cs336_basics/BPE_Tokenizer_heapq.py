@@ -98,7 +98,7 @@ def pretokenization(task):
     return ct
 
 if __name__ == "__main__":
-    root = Path(r"/Users/peiyanbai/Projects/stanford_cs_336/assignment1-basics/data/data")
+    root = Path("data/tinystories")
     # root = Path(r"D:\Projects\assignment1-basics\data\openwebtext_txt")
     
     vocabulary = {
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     print(list(root.glob("*.txt")))
     for file in root.glob("*.txt"):
         print(file)
-        path = root / file
+        path = file
         boundries = list()
         with open(path,"rb") as f:
             boundries = find_chunk_boundaries(f,num_chunks,b"<|endoftext|>")
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     total_merges = max_vocabsize - len(vocabulary)
 
     
-    print(len(vocabulary) < max_vocabsize and pair_freq)
+    
     while len(vocabulary) < max_vocabsize and pair_freq:
         
         t0 = time.perf_counter()
