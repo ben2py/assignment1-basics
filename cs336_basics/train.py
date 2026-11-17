@@ -10,6 +10,7 @@ from einops import rearrange
 import torch
 import time
 import random
+import wandb
 
 
 def get_available_device():
@@ -43,6 +44,23 @@ class TrainConfig:
 
 
 if __name__ == "__main__":
+
+    run = wandb.init(
+        project = "cs336_basics",
+        name = "6layers-768dim-compiled",
+        mode = "online",
+        dir = "cs336_basics/wandb",
+        config = {
+            "num_layers": 6,
+            "num_heads": 12,
+            "d_model": 768,
+            "vocab_size": 32000,
+            "context_length": 256,
+            "batch_size": 8,
+            "learning_rate": 3e-4,
+            "compile": True,
+        }   
+    )
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -86,7 +104,11 @@ if __name__ == "__main__":
     print(f"running on {device}")
 
     AdamW = AdamW(net.parameters(),lr,(beta1,beta2),eps,weight_decay)
-    
+    net.compile()
+    window_loss = 0
+    window_tokens = 0
+    window_steps = 0
+    last_log_time = time.perf_counter()
     for i in range(train_config.max_step):
         start = time.perf_counter()
         file = random.choice(list(root.glob("*.bin")))
@@ -122,10 +144,29 @@ if __name__ == "__main__":
         AdamW.step()
         AdamW.zero_grad()
         print(f"step {i}, loss {loss};time consumed is {time.perf_counter() - start}")
-        if i%1000 == 0 and i!=0:
+        window_steps +=1
+        window_loss += loss.detach()
+        window_tokens += x.numel()
+        if (i+1)%10000 == 0:
             dst = out / f"{i}"
-            print(f"step {i}: save checkpoint to {dst}")
             save_checkpoint(net,AdamW,i,dst)
+        if (i+1)%50 ==0:
+            torch.cuda.synchronize()
+            elapsed_time = time.perf_counter - last_log_time
+            metrices = {
+                "train/lr":AdamW.param_groups[0]["lr"],
+                "train/loss":(window_loss/window_steps).item(),
+                "pref/tokens_per_second":window_tokens/elapsed_time,
+                "pref/step_time":elapsed_time / window_steps,
+                "train/token_seen": (i+1)*x.numel()
+            }
+            
+            run.log(metrices,step = i+1)
+            window_steps = 0
+            window_loss = 0
+            window_tokens = 0
+            last_log_time = time.perf_counter()
+    run.finish
             
 
 
