@@ -13,7 +13,7 @@ class SiLU(nn.Module):
 class GLU(nn.Module):
     def __init__(self,d_model):
         super().__init__()
-        assert int(d_model*8/3) == d_model*8/3
+        assert int(d_model*8//3) == d_model*8//3
         self.W1 = nn.Parameter(torch.randn(d_model*8//3,d_model)) #shape d_ff d
         self.W3 = nn.Parameter(torch.randn(d_model*8//3,d_model))
         std = math.sqrt(2/(d_model+d_model*8/3))

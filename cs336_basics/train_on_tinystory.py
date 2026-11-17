@@ -132,14 +132,14 @@ if __name__ == "__main__":
         loss.backward()
         gradient_clipping(net.parameters(),max_grad_norm,eps)
 
-        step_lr = learning_rate_schedule(
-            t=i,
-            lr_max=3e-4,
-            lr_min=3e-5,
-            t_w=1000,
-            t_c=29999,
-        )
-        lr = step_lr
+        # step_lr = learning_rate_schedule(
+        #     t=i,
+        #     lr_max=3e-4,
+        #     lr_min=3e-5,
+        #     t_w=1000,
+        #     t_c=29999,
+        # )
+        # lr = step_lr
 
         AdamW.step()
         AdamW.zero_grad()
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             window_loss = 0
             window_tokens = 0
             last_log_time = time.perf_counter()
-    run.finish
+    run.finish()
             
 
 
