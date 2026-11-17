@@ -40,12 +40,12 @@ if __name__ == "__main__":
     src = inference_config.src
 
     net = Transformer_LM(vocab_size,context_length,num_layers,d_model,num_heads,d_model*8/3)
-    state_dict = torch.load(src/"random_whole_OWT/9975",map_location = torch.device("cpu"))
+    state_dict = torch.load(src/"20000")#,map_location = torch.device("cpu")
     net.load_state_dict(state_dict["model"])
     input_text = "When I moved into my first apartment, I had no idea how much money I would spend on"
 
     root = Path("Output/openwebtext")
-    t = Tokenizer.from_files(root/"vocab.pkl",root/"merges.pkl",special_tokens=["<|eos|>"])
+    t = Tokenizer.from_files(root/"vocab.pkl",root/"merges.pkl",special_tokens=["<|endoftext|>"])
 
     encoded = t.encode(input_text)
     last_token = torch.tensor([[encoded[-1]]])
@@ -53,14 +53,14 @@ if __name__ == "__main__":
     encoded = torch.tensor(encoded) #shape l
     new_input = rearrange(encoded,"... -> 1 ...")
     cnt = 0
-    while last_token.item()!=256 and len(new_input[0]) < vocab_size and cnt <256 :
+    while last_token.item()!=256 and new_input.shape[1] < 256 and cnt <256 :
 
         logits = net(new_input) #shape B L vocab_size
         next_logit = logits[:,-1,:] #shape (1,1,vocab_size)
 
         next_logit_softmax = softmax_temparature(next_logit,-1,1)
         token = top_p(next_logit_softmax,0.9)
-        print(new_input.shape)
+        
     
         new_input = torch.cat((new_input,token),dim=-1)
 

@@ -22,11 +22,11 @@ def data_load(x:np.ndarray,batch_size,context_length,device):
     )
     
     return (left_tensor,right_tensor)
-root = Path("Output/Tokenized")
-arr = np.memmap(
-    root / "train-00000-of-00080.bin",
-    dtype = np.uint16,
-    mode = "r",
+# root = Path("Output/Tokenized")
+# arr = np.memmap(
+#     root / "train-00000-of-00080.bin",
+#     dtype = np.uint16,
+#     mode = "r",
     
-)
-print(any([i== 256 for i in data_load(arr,1,1000000,"mps")[0][0].tolist()]))
+# )
+# print(any([i== 256 for i in data_load(arr,1,1000000,"cpu")[0][0].tolist()]))

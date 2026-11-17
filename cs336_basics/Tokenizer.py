@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable,Iterator
 from functools import lru_cache
 from concurrent.futures import ProcessPoolExecutor
+import sys
 class Tokenizer:
     def __init__(self,vocab,merges,special_tokens = None):
         self.vocab = vocab
@@ -25,6 +26,7 @@ class Tokenizer:
             special_pattern = "|".join(
                 re.escape(special_token) for special_token in sorted(self.special_tokens,key=len,reverse=True)
             )
+            special_pattern = f"({special_pattern})"
             self.special_pattern = re.compile(special_pattern)
         else:
             self.special_pattern = None
@@ -85,12 +87,12 @@ class Tokenizer:
         
         if self.special_pattern:
             
-            parts = re.split(f"{self.special_pattern}",text)
-            parts.append("<|endoftext|>")
+            parts = re.split(self.special_pattern,text) 
+            
             # re.split(special_pattern),会去除掉 special_pattern
             # re.split(f"({special_pattern})") 会保留 special_pattern
-            # print(len(parts))
-            # print(parts[-1])
+            print(parts)
+           
 # 
         else:
             parts = [text]

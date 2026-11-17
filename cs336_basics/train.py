@@ -3,7 +3,7 @@ import argparse
 from .model.Full_Transfomer import Transformer_LM,cross_entropy
 from .model.DataLoader import data_load
 from .model.checkpoint import save_checkpoint,load_checkpoint
-from .model.Optimizer import AdamW,gradient_clipping
+from .model.Optimizer import AdamW,gradient_clipping,learning_rate_schedule
 import numpy as np
 from pathlib import Path
 from einops import rearrange
@@ -36,7 +36,7 @@ class OptimizerConfig:
 @dataclass
 class TrainConfig:
     batch_size:int =  8
-    max_step:int = 10000
+    max_step:int = 30000
     max_grad_norm:int = 1
     device:str = get_available_device()
     out:Path = Path("Output/checkpoints")
@@ -109,12 +109,22 @@ if __name__ == "__main__":
         
         loss.backward()
         gradient_clipping(net.parameters(),max_grad_norm,eps)
+
+        step_lr = learning_rate_schedule(
+            t=i,
+            lr_max=3e-4,
+            lr_min=3e-5,
+            t_w=1000,
+            t_c=29999,
+        )
+        lr = step_lr
+
         AdamW.step()
         AdamW.zero_grad()
         print(f"step {i}, loss {loss};time consumed is {time.perf_counter() - start}")
-        if i%25 == 0 and i!=0:
+        if i%1000 == 0 and i!=0:
             dst = out / f"{i}"
-            print(f"step {i}: save checkpoint to {dst} loss: {loss}")
+            print(f"step {i}: save checkpoint to {dst}")
             save_checkpoint(net,AdamW,i,dst)
             
 

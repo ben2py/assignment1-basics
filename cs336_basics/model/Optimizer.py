@@ -29,7 +29,7 @@ class AdamW(torch.optim.Optimizer):
                 exp_avg_sq = state.get("exp_avg_sq",torch.zeros_like(p))
                 #update the exp_avg & exp_avg_sq
                 exp_avg.mul_(beta1).add_(grad,alpha=1-beta1)
-                exp_avg_sq.mul(beta2).addcmul_(
+                exp_avg_sq.mul_(beta2).addcmul_(
                     grad,grad,value = 1-beta2
                 )
 
@@ -50,7 +50,7 @@ def learning_rate_schedule(t,lr_max,lr_min,t_w,t_c):
     if t < t_w:return lr_max/t_w*t
     elif t > t_c:return lr_min
     else:
-        return lr_min + 0.5*(lr_max - lr_min)*(1+cos((t-t_w)/(t_c-t_w)*math.pi)) 
+        return lr_min + 0.5*(lr_max - lr_min)*(1+math.cos((t-t_w)/(t_c-t_w)*math.pi)) 
         
 def gradient_clipping(params:Iterable[torch.Tensor],max_norm,eps):
     grads = [p.grad for p in params if p.grad is not None]
