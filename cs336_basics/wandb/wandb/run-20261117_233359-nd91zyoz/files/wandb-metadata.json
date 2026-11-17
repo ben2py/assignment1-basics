@@ -1,0 +1,43 @@
+{
+  "os":  "Linux-5.15.0-112-generic-x86_64-with-glibc2.35",
+  "python":  "CPython 3.12.3",
+  "startedAt":  "2026-11-17T15:33:59.747644Z",
+  "program":  "-m cs336_basics.train_on_tinystory",
+  "git":  {
+    "remote":  "https://github.com/ben2py/assignment1-basics.git",
+    "commit":  "dda9dcd4465370694b95eb4031ef3a1285aaacb5"
+  },
+  "email":  "ben2py123456@gmail.com",
+  "root":  "cs336_basics/wandb",
+  "host":  "autodl-container-wpn6tqcvq6-53c6184f",
+  "executable":  "/root/miniconda3/bin/python",
+  "cpu_count":  64,
+  "cpu_count_logical":  128,
+  "gpu":  "NVIDIA GeForce RTX 4080 SUPER",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "32212254720",
+      "used":  "2255126528"
+    }
+  },
+  "memory":  {
+    "total":  "540647911424"
+  },
+  "cpu":  {
+    "model":  "Intel(R) Xeon(R) Platinum 8352V CPU @ 2.10GHz"
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA GeForce RTX 4080 SUPER",
+      "memoryTotal":  "34351349760",
+      "cudaCores":  10240,
+      "architecture":  "Ada",
+      "uuid":  "GPU-e75e8335-1aae-f42c-5b18-039c78b0030c",
+      "pciBusId":  "00000000:99:00.0",
+      "numaNode":  1
+    }
+  ],
+  "cudaVersion":  "13.2",
+  "writerId":  "01a1ea24-c14c-7f2d-b313-cbeaf9b06b67"
+}

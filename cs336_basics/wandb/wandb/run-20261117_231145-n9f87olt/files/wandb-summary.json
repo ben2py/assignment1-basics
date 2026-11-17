@@ -1,0 +1,1 @@
+{"_step":30000,"_timestamp":1.7949295325850859e+09,"train/loss":1.6781432628631592,"train/token_seen":122880000,"_wandb":{"runtime":1225},"train/lr":0.0003,"_runtime":1225.822133684,"pref/tokens_per_second":90486.95657326447,"pref/step_time":0.04526619255542755}

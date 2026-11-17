@@ -22,9 +22,9 @@ def get_available_device():
 class ModelConfig:
     vocab_size:int = 32000
     context_length:int = 256
-    d_model:int = 768
-    num_layers:int = 6
-    num_heads:int = 8
+    d_model:int = 512
+    num_layers:int = 4
+    num_heads:int = 16
 
 @dataclass
 class OptimizerConfig:
@@ -36,8 +36,8 @@ class OptimizerConfig:
 
 @dataclass
 class TrainConfig:
-    batch_size:int =  8
-    max_step:int = 30000
+    batch_size:int =  32
+    max_step:int = 60000
     max_grad_norm:int = 1
     device:str = get_available_device()
     out:Path = Path("Output/checkpoints")
@@ -47,13 +47,13 @@ if __name__ == "__main__":
 
     run = wandb.init(
         project = "cs336_basics",
-        name = "6layers-768dim-compiled",
+        name = "4layers-512dim-compiled_OWT_batch32",
         mode = "online",
         dir = "cs336_basics/wandb",
         config = {
-            "num_layers": 6,
-            "num_heads": 12,
-            "d_model": 768,
+            "num_layers": 4,
+            "num_heads": 16,
+            "d_model": 512,
             "vocab_size": 32000,
             "context_length": 256,
             "batch_size": 8,
@@ -132,14 +132,14 @@ if __name__ == "__main__":
         loss.backward()
         gradient_clipping(net.parameters(),max_grad_norm,eps)
 
-        step_lr = learning_rate_schedule(
-            t=i,
-            lr_max=3e-4,
-            lr_min=3e-5,
-            t_w=1000,
-            t_c=29999,
-        )
-        lr = step_lr
+        # step_lr = learning_rate_schedule(
+        #     t=i,
+        #     lr_max=3e-4,
+        #     lr_min=3e-5,
+        #     t_w=1000,
+        #     t_c=29999,
+        # )
+        # lr = step_lr
 
         AdamW.step()
         AdamW.zero_grad()
@@ -152,7 +152,7 @@ if __name__ == "__main__":
             save_checkpoint(net,AdamW,i,dst)
         if (i+1)%50 ==0:
             torch.cuda.synchronize()
-            elapsed_time = time.perf_counter - last_log_time
+            elapsed_time = time.perf_counter() - last_log_time
             metrices = {
                 "train/lr":AdamW.param_groups[0]["lr"],
                 "train/loss":(window_loss/window_steps).item(),
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             window_loss = 0
             window_tokens = 0
             last_log_time = time.perf_counter()
-    run.finish
+    run.finish()
             
 
 

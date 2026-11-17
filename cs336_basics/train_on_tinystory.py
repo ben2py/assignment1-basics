@@ -36,8 +36,8 @@ class OptimizerConfig:
 
 @dataclass
 class TrainConfig:
-    batch_size:int =  8
-    max_step:int = 30000
+    batch_size:int =  32
+    max_step:int = 60000
     max_grad_norm:int = 1
     device:str = get_available_device()
     out:Path = Path("Output/checkpoints")
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     run = wandb.init(
         project = "cs336_basics_tinystory",
-        name = "4layers-512dim-compiled",
+        name = "4layers-512dim-compiled_batch32",
         mode = "online",
         dir = "cs336_basics/wandb",
         config = {

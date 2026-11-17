@@ -48,7 +48,7 @@ class SwiGLU(nn.Module):
         super().__init__()
         self.d_model = d_model
         
-        assert int(d_model*8/3) == d_model*8/3
+        assert int(d_model*8//3) == d_model*8//3
         self.glu = GLU(d_model)
         self.W2 = nn.Parameter(torch.randn(d_model,d_model*8//3))
         std = math.sqrt(2/(d_model+d_model*8/3))
