@@ -28,7 +28,7 @@ def encode_afile(task):
     with open(file,"r",encoding="utf-8") as f:
         docs = read_document(f)
         tokens = _tokenizer.encode_iterable(docs)
-        Path("Output/openwebtext").mkdir(exist_ok=True,parents=True)
+        Path("Output/tinystory").mkdir(exist_ok=True,parents=True)
         start = time.perf_counter()
 
         output_dir = Path("Output/tinystory/tokenized")
@@ -51,12 +51,13 @@ def init_worker():
     global _tokenizer
     _tokenizer = Tokenizer.from_files("Output/tinystory/vocab.pkl","Output/tinystory/merges.pkl",special_tokens=["<|endoftext|>"])
 if __name__ in "__main__":
-    data_root = Path("data/data")
+    data_root = Path("data/tinystories")
     max_worker = 2
     task = [
         (id,file_name)
         for id,file_name in enumerate(sorted(data_root.glob("*.txt")))
     ] 
+    
     
     with ProcessPoolExecutor(max_workers = max_worker,initializer=init_worker) as executor:
         for res in executor.map(encode_afile,task):
