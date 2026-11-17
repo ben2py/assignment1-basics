@@ -95,7 +95,7 @@ if __name__ == "__main__":
     out = train_config.out
     out.mkdir(exist_ok=True)
 
-    root = Path("Output/Tokenized")
+    root = Path("Output/tinystory/tokenized")
     root.mkdir(exist_ok=True)
 
     

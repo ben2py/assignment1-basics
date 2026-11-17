@@ -91,7 +91,7 @@ class Tokenizer:
             
             # re.split(special_pattern),会去除掉 special_pattern
             # re.split(f"({special_pattern})") 会保留 special_pattern
-            print(parts)
+            
            
 # 
         else:
